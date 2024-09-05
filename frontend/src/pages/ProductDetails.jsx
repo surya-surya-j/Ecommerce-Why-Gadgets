@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import SummaryAPI from "../common";
 import { FaStar } from "react-icons/fa";
 import { FaStarHalf } from "react-icons/fa";
 import displayINRCurrency from "../helpers/displayCurrency";
 import VerticalCardProduct from "../components/VerticalCardProducts";
 import CategoryWiseProducts from "../components/CategoryWiseProducts";
-
+import addToCart from "../helpers/addtoCart";
+import Context from "../context";
 
 const ProductDetails = () => {
   const [data, setData] = useState({
@@ -22,12 +23,14 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(false);
   const productImageListLoading = new Array(4).fill(null);
   const [activeImg, setActiveImg] = useState("");
-  const [zoomImage, setZoomImage] = useState(false);
+  const navigate = useNavigate()
+
   const [zoomCoordinate, setZoomCoordinate] = useState({
     x: 0,
     y: 0,
   });
-
+  const [zoomImage, setZoomImage] = useState(false);
+  const { fetchUserAddToCart } = useContext(Context);
   const fetchProductDetails = async () => {
     setLoading(true);
     const responce = await fetch(SummaryAPI.productDetails.url, {
@@ -47,7 +50,7 @@ const ProductDetails = () => {
 
   useEffect(() => {
     fetchProductDetails();
-  }, []);
+  }, [params]);
 
   const handleMouseEnterProduct = (imageUrl) => {
     setActiveImg(imageUrl);
@@ -74,6 +77,18 @@ const ProductDetails = () => {
   const handleLeaveImageZoom = () => {
     setZoomImage(false);
   };
+
+  const handleAddtoCart = async (e, id) => {
+    await addToCart(e, id);
+    fetchUserAddToCart();
+  };
+
+  const handleBuyProduct = async (e, id) => {
+    await addToCart(e, id);
+    fetchUserAddToCart();
+    navigate("/cart");
+  };
+
   return (
     <div className="container mx-auto p-4">
       <div className=" min-h-[200px] flex flex-col lg:flex-row gap-4">
@@ -109,7 +124,7 @@ const ProductDetails = () => {
               <div className="flex gap-2 lg:flex-col overflow-scroll scrollbar-none h-full">
                 {productImageListLoading?.map((el, index) => (
                   <div
-                    key={"loading-image"}
+                    key={"loadingimage" + index}
                     className="h-20 w-20 bg-slate-200 rounded animate-pulse"
                   ></div>
                 ))}
@@ -186,10 +201,16 @@ const ProductDetails = () => {
             </div>
 
             <div className="flex items-center gap-3 my-3">
-              <button className="border-2 border-red-600 rounded px-3 py-1 min-w-[120px] text-red-600 font-medium hover:bg-red-600 hover:text-white">
+              <button
+                className="border-2 border-red-600 rounded px-3 py-1 min-w-[120px] text-red-600 font-medium hover:bg-red-600 hover:text-white"
+                onClick={(e) => handleBuyProduct(e, data?._id)}
+              >
                 Buy
               </button>
-              <button className="border-2 border-red-600 rounded px-3 py-1 min-w-[120px] font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white ">
+              <button
+                className="border-2 border-red-600 rounded px-3 py-1 min-w-[120px] font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white "
+                onClick={(e) => handleAddtoCart(e, data?._id)}
+              >
                 Add to Cart
               </button>
             </div>
@@ -203,7 +224,10 @@ const ProductDetails = () => {
       </div>
 
       {data.category && (
-        <CategoryWiseProducts category={data?.category} heading={"Mobiles"} />
+        <CategoryWiseProducts
+          category={data?.category}
+          heading={"Recommended product"}
+        />
       )}
     </div>
   );
